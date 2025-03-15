@@ -1,10 +1,8 @@
+import { sendEmail } from "@/actions/email";
+import prisma from "@/lib/prisma";
 import { betterAuth, BetterAuthOptions } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import prisma from "@/lib/prisma";
-import { sendEmail } from "@/actions/email";
-import { openAPI } from "better-auth/plugins";
-import { admin } from "better-auth/plugins";
-
+import { admin, openAPI } from "better-auth/plugins";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -12,13 +10,13 @@ export const auth = betterAuth({
   }),
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
-    // BUG: Prob a bug with updateAge method. It throws an error - Argument `where` of type SessionWhereUniqueInput needs at least one of `id` arguments. 
+    // BUG: Prob a bug with updateAge method. It throws an error - Argument `where` of type SessionWhereUniqueInput needs at least one of `id` arguments.
     // As a workaround, set updateAge to a large value for now.
     updateAge: 60 * 60 * 24 * 7, // 7 days (every 7 days the session expiration is updated)
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60 // Cache duration in seconds
-    }
+      maxAge: 5 * 60, // Cache duration in seconds
+    },
   },
   user: {
     additionalFields: {
@@ -32,11 +30,11 @@ export const auth = betterAuth({
       sendChangeEmailVerification: async ({ newEmail, url }) => {
         await sendEmail({
           to: newEmail,
-          subject: 'Verify your email change',
-          text: `Click the link to verify: ${url}`
-        })
-      }
-    }
+          subject: "Verify your email change",
+          text: `Click the link to verify: ${url}`,
+        });
+      },
+    },
   },
   socialProviders: {
     github: {
@@ -44,9 +42,12 @@ export const auth = betterAuth({
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
     },
   },
-  plugins: [openAPI(), admin({
-    impersonationSessionDuration: 60 * 60 * 24 * 7, // 7 days
-  })], // api/auth/reference
+  plugins: [
+    openAPI(),
+    admin({
+      impersonationSessionDuration: 60 * 60 * 24 * 7, // 7 days
+    }),
+  ], // api/auth/reference
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -69,7 +70,7 @@ export const auth = betterAuth({
         text: `Click the link to verify your email: ${verificationUrl}`,
       });
     },
-  }
+  },
 } satisfies BetterAuthOptions);
 
 export type Session = typeof auth.$Infer.Session;
